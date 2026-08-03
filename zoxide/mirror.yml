@@ -91,11 +91,10 @@ assets:
     - "^zoxide-.*-x86_64-unknown-linux-musl\\.tar\\.gz$"
   linux/arm64:
     - "^zoxide-.*-aarch64-unknown-linux-musl\\.tar\\.gz$"
-  # ── Pass 2 (darwin) — uncomment together with the platforms: keys ─────────
-  # darwin/amd64:
-  #   - "^zoxide-.*-x86_64-apple-darwin\\.tar\\.gz$"
-  # darwin/arm64:
-  #   - "^zoxide-.*-aarch64-apple-darwin\\.tar\\.gz$"
+  darwin/amd64:
+    - "^zoxide-.*-x86_64-apple-darwin\\.tar\\.gz$"
+  darwin/arm64:
+    - "^zoxide-.*-aarch64-apple-darwin\\.tar\\.gz$"
   # ── Pass 3 (windows) ──────────────────────────────────────────────────────
   # windows/amd64:
   #   - "^zoxide-.*-x86_64-pc-windows-msvc\\.zip$"
