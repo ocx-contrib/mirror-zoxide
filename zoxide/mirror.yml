@@ -1,0 +1,160 @@
+# ⚠ `extends:` is a SHALLOW merge of TOP-LEVEL KEYS. Setting a key here
+# REPLACES the base's block outright — there is no per-key merge. `platforms:`
+# is deliberately NOT restated below: it carries the container legs that make
+# this spec's bare Linux keys honest, and restating it to tweak one runner
+# would drop them all without reddening anything.
+extends: ../mirror-base.yml
+
+name: zoxide
+
+# Logical index package `zoxide/zoxide` at the physical path
+# `ghcr.io/ocx-contrib/zoxide/zoxide` — slash segments, never hyphen-flattened.
+# Two segments always; `ajeetdsouza` is a personal handle, not a vendor, so the
+# tool names itself. The first segment must be this repo's own GitHub owner:
+# GITHUB_TOKEN only authorises packages owned by the repo the workflow runs in.
+target:
+  registry: ghcr.io
+  repository: ocx-contrib/zoxide/zoxide
+
+source:
+  type: github_release
+  owner: ajeetdsouza
+  repo: zoxide
+  # zoxide tags carry a "v" prefix (e.g. "v0.10.0"); the captured version does
+  # not. Verified against every tag from v0.4.1 to v0.10.0 — the scheme has
+  # never varied.
+  tag_pattern: "^v(?P<version>\\d+\\.\\d+\\.\\d+)$"
+
+# ─── libc gate (Phase 3.5) — the evidence, not the conclusion ───────────────
+#
+# Upstream publishes NO `-gnu` Linux asset for ANY arch — musl target triples
+# only, on every Linux arch it ships. That triple is not the verdict. Measured
+# at BOTH ends of the mirrored range (0.9.8 and 0.10.0) and on BOTH declared
+# arches, because a toolchain can change mid-series:
+#
+#   $ file zoxide-0.10.0-x86_64-unknown-linux-musl/zoxide
+#   ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), static-pie linked, stripped
+#   $ readelf -l … | grep -c INTERP  → 0
+#   $ readelf -d … | grep NEEDED     → (none)
+#
+#   $ file zoxide-0.10.0-aarch64-unknown-linux-musl/zoxide
+#   ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, stripped
+#   $ readelf -l … | grep -c INTERP  → 0
+#   $ readelf -d … | grep NEEDED     → (none)
+#
+#   $ file zoxide-0.9.8-x86_64-unknown-linux-musl/zoxide
+#   ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), static-pie linked, stripped
+#   $ readelf -l … | grep -c INTERP  → 0
+#   $ readelf -d … | grep NEEDED     → (none)
+#
+#   $ file zoxide-0.9.8-aarch64-unknown-linux-musl/zoxide
+#   ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, stripped
+#   $ readelf -l … | grep -c INTERP  → 0
+#   $ readelf -d … | grep NEEDED     → (none)
+#
+# No PT_INTERP and no DT_NEEDED on any of the four: musl is linked IN, not
+# linked AGAINST. The artifact requires nothing of the host, so both Linux keys
+# are BARE — no `+libc.*` suffix. Tagging them `+libc.musl` would be a false
+# requirement that hid the package from every glibc host it in fact runs on.
+# Container legs (ubuntu + alpine + fedora on both arches) live in
+# ../mirror-base.yml and are what turn that claim into evidence.
+#
+# ─── Scope + resolution (verified on EVERY in-range release) ────────────────
+#
+# The mirrored range is exactly v0.9.8, v0.9.9, v0.10.0 — three releases. Each
+# of the six patterns below was matched against each release's full asset list:
+# EXACTLY ONE match, every time, both ways. A pattern matching zero is silently
+# skipped rather than an error, which would yield a green run with a missing
+# platform.
+#
+# The asset set is NOT frozen across the range — checked by diffing the full
+# lists version-over-version rather than assuming:
+#   armv7-linux-androideabi.tar.gz     arrives at 0.9.9  (absent at 0.9.8)
+#   riscv64gc-unknown-linux-musl.tar.gz + _riscv64.deb   arrive at 0.10.0
+# Both additions land outside the OCX platform set, so no declared platform
+# flips. Nothing is dropped anywhere in the range, and no in-range release is
+# asset-less, so the 0.9.8 floor needs no lift.
+#
+# Upstream also publishes, and this mirror deliberately does not carry:
+#   i686-unknown-linux-musl            — no OCX linux/386 platform
+#   arm-unknown-linux-musleabihf       — no OCX linux/arm platform
+#   armv7-unknown-linux-musleabihf     — no OCX linux/arm platform
+#   riscv64gc-unknown-linux-musl       — no OCX platform (new in 0.10.0)
+#   aarch64-linux-android              — Android is not an OCX os
+#   armv7-linux-androideabi            — Android is not an OCX os (from 0.9.9)
+#   zoxide_<V>-1_{amd64,arm64,armhf,i386,riscv64}.deb  — distro sidecars
+# Windows ships x86_64 and aarch64 msvc only — there is no windows/i686 asset,
+# and none is declared. The anchored ^…$ regexes are what keep all of the above
+# out.
+assets:
+  linux/amd64:
+    - "^zoxide-.*-x86_64-unknown-linux-musl\\.tar\\.gz$"
+  linux/arm64:
+    - "^zoxide-.*-aarch64-unknown-linux-musl\\.tar\\.gz$"
+  # ── Pass 2 (darwin) — uncomment together with the platforms: keys ─────────
+  # darwin/amd64:
+  #   - "^zoxide-.*-x86_64-apple-darwin\\.tar\\.gz$"
+  # darwin/arm64:
+  #   - "^zoxide-.*-aarch64-apple-darwin\\.tar\\.gz$"
+  # ── Pass 3 (windows) ──────────────────────────────────────────────────────
+  # windows/amd64:
+  #   - "^zoxide-.*-x86_64-pc-windows-msvc\\.zip$"
+  # windows/arm64:
+  #   - "^zoxide-.*-aarch64-pc-windows-msvc\\.zip$"
+
+# Every archive — tarball and zip alike — is FLAT: zoxide(.exe) sits at the
+# archive root beside CHANGELOG.md, LICENSE, README.md, man/ and completions/,
+# with no wrapper directory. Verified by `tar tzf` / `unzip -l` on 0.9.8 and
+# 0.10.0, linux + darwin + windows. So strip_components 0 on every platform,
+# the binary lands at the content root, and one metadata.json
+# (PATH = ${installPath}) serves all six.
+asset_type:
+  type: archive
+  strip_components: 0
+
+# FORCED by the flat archive, not chosen. `bin_scan` only inspects an
+# interface-visible `${installPath}/<dir>` PATH entry, and this archive has no
+# subdirectory to point one at, so both `auto` and `verify` fail spec load at
+# exit 65:
+#
+#   bin_scan is enabled but metadata.json declares no interface-visible
+#   ${installPath}/<dir> PATH entry — the verification would inspect no file and
+#   pass green whatever the archive contains.
+#
+# The `binaries` list in metadata.json is therefore hand-maintained, exactly as
+# that error directs. It is short and stable: `zoxide` (`zoxide.exe` on
+# Windows) is the only mode-0755 entry in the archive; the man pages, the shell
+# completions, CHANGELOG.md, LICENSE and README.md are all 0644 data. Quoted so
+# no YAML 1.1 reader folds the bare word into boolean `false`.
+bin_scan: "off"
+
+metadata:
+  default: metadata.json
+
+catalog:
+  logo: logo.svg
+
+versions:
+  # 0.9.8 is the oldest release carrying the full six-platform asset set in the
+  # current naming scheme; every release from here to 0.10.0 resolves all six.
+  min: "0.9.8"
+  new_per_run: 5
+  poll_interval: "13 */6 * * *"
+
+tests:
+  # `script:` resolves from the REPOSITORY ROOT — unlike `metadata.default` and
+  # `catalog.logo` above, which resolve against this spec's own directory.
+  - name: smoke
+    script: zoxide/tests/smoke.star
+
+annotations:
+  # From the Phase 1.5 license gate:
+  #   $ gh api repos/ajeetdsouza/zoxide/license --jq '.license.spdx_id'
+  #   MIT
+  org.opencontainers.image.licenses: "MIT"
+
+announce:
+  # Spelled out, not derived from target.repository — the logical name and the
+  # physical path are related by convention only.
+  package: zoxide/zoxide
+  fork: ocx-contrib/index
