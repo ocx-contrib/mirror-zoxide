@@ -95,11 +95,10 @@ assets:
     - "^zoxide-.*-x86_64-apple-darwin\\.tar\\.gz$"
   darwin/arm64:
     - "^zoxide-.*-aarch64-apple-darwin\\.tar\\.gz$"
-  # ── Pass 3 (windows) ──────────────────────────────────────────────────────
-  # windows/amd64:
-  #   - "^zoxide-.*-x86_64-pc-windows-msvc\\.zip$"
-  # windows/arm64:
-  #   - "^zoxide-.*-aarch64-pc-windows-msvc\\.zip$"
+  windows/amd64:
+    - "^zoxide-.*-x86_64-pc-windows-msvc\\.zip$"
+  windows/arm64:
+    - "^zoxide-.*-aarch64-pc-windows-msvc\\.zip$"
 
 # Every archive — tarball and zip alike — is FLAT: zoxide(.exe) sits at the
 # archive root beside CHANGELOG.md, LICENSE, README.md, man/ and completions/,
