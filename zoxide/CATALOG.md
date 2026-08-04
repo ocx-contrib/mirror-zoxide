@@ -45,17 +45,6 @@ zoxide init fish | source
 
 Then `z <keyword>` jumps, and `zi <keyword>` picks interactively.
 
-## Install with ocx
-
-```sh
-ocx install ocx.sh/zoxide/zoxide
-```
-
-```sh
-# or pin a specific version
-ocx install ocx.sh/zoxide/zoxide:0.10.0
-```
-
 ## Links
 
 - [zoxide on GitHub](https://github.com/ajeetdsouza/zoxide)
